@@ -1,0 +1,27 @@
+import asyncio
+import pybotters
+
+
+async def main():
+    async with pybotters.Client() as client:
+        store = pybotters.BybitV5DataStore()
+        ws = await client.ws_connect(
+            'wss://stream.bybit.com/v5/public/linear',
+            send_json={
+                'op': 'subscribe',
+                'args': ['orderbook.50.BTCUSDT'],
+            },
+            hdlr_json=store.onmessage,
+        )
+        while not all([
+            len(store.orderbook),
+        ]):
+            await store.wait()
+        
+        # 以下取得したordebookを元に発注を繰り返す。
+        while True:
+            await store.orderbook.wait()
+            orderbook = store.orderbook.sorted({'symbol': 'BTCUSDT'})
+            # print(orderbook)
+            # await asyncio.sleep(10)
+asyncio.run(main())
